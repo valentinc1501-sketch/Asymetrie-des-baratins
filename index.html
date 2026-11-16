@@ -85,49 +85,60 @@
 <body>
 
 <div class="carte">
-
-  <div class="zone titre" contenteditable="true">
-    <i>Idée reçu n° 17 :</i><br>
-    <b>Je préfère faire attention à l'humain plutôt qu'aux plantes et aux animaux comme vous</b>
-  </div>
-
-  <div class="zone point p1" contenteditable="true">
-    75 % de l'alimentation mondiale repose sur seulement 17 espèces clés. Son effondrement menace directement notre survie. <span class="source">FAO</span>
-  </div>
-
-  <div class="zone point p2" contenteditable="true">
-    Le climat déplace les humains.<br>
-    <b>21,5 millions de déplacés</b> par an liés au climat, <b>216 millions d'ici 2050.</b> <span class="source">IDMC / Worldbank</span>
-  </div>
-
-  <div class="zone point p3" contenteditable="true">
-    Précarité et climat : la double peine.<br>
-    Le dérèglement climatique fait gonfler les prix énergétiques et alimentaires. En France, les plus précaires le subissent de plein fouet. <span class="source">France Stratégie</span>
-  </div>
-
-  <div class="zone point p4" contenteditable="true">
-    La pollution tue plus que les guerres.<br>
-    9 millions de morts par an. C'est la première menace pour la vie humaine. <span class="source">OMS</span>
-  </div>
-
-  <div class="zone theme" contenteditable="true">
-    Écologie & Environnement
-  </div>
-
+  <div class="zone titre" id="titre" contenteditable="true">Chargement…</div>
+  <div class="zone point p1" id="p1" contenteditable="true"></div>
+  <div class="zone point p2" id="p2" contenteditable="true"></div>
+  <div class="zone point p3" id="p3" contenteditable="true"></div>
+  <div class="zone point p4" id="p4" contenteditable="true"></div>
+  <div class="zone theme" id="theme" contenteditable="true"></div>
 </div>
 
 <script>
+  // Remplacez par l'adresse de VOTRE Worker (sans / à la fin)
+  const WORKER = "https://asymetrie-des-baratins.valentin-c-1501.workers.dev/";
+
   function verifier(el) {
     el.classList.toggle("depasse", el.scrollHeight > el.clientHeight + 1);
   }
   function toutVerifier() {
     document.querySelectorAll(".zone").forEach(verifier);
   }
+
+  // Convertit "<b>Titre.</b><br>suite <b>SOURCE</b>" : la dernière balise <b> devient la source grise
+  function avecSource(html) {
+    const i = html.lastIndexOf("<b>");
+    if (i > 0 && html.indexOf("</b>", i) === html.length - 4 && html.slice(i).length < 60) {
+      return html.slice(0, i) + '<span class="source">' + html.slice(i + 3, -4) + "</span>";
+    }
+    return html;
+  }
+
+  async function charger() {
+    const params = new URLSearchParams(location.search);
+    const num = params.get("page") || "01";
+    const theme = params.get("theme") || "";
+    try {
+      const r = await fetch(WORKER + "/?page=" + encodeURIComponent(num));
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      document.getElementById("titre").innerHTML = d.titre;
+      for (let i = 0; i < 4; i++) {
+        document.getElementById("p" + (i + 1)).innerHTML = avecSource(d.points[i] || "");
+      }
+      document.getElementById("theme").textContent = theme;
+    } catch (e) {
+      document.getElementById("titre").textContent = "Erreur : " + e.message;
+    }
+    toutVerifier();
+    if (document.fonts) document.fonts.ready.then(toutVerifier);
+  }
+
   document.querySelectorAll(".zone").forEach(function (el) {
     el.addEventListener("input", function () { verifier(el); });
   });
-  window.addEventListener("load", toutVerifier);
-  if (document.fonts) document.fonts.ready.then(toutVerifier);
+  charger();
+  // Rafraîchit toutes les 15 secondes pour suivre vos modifications Notion
+  setInterval(charger, 15000);
 </script>
 
 </body>
