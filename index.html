@@ -14,7 +14,6 @@
     padding: 20px;
   }
 
-  /* La carte : 65 x 110 mm exactement, le fond remplit toute la carte */
   .carte {
     position: relative;
     width: 65mm;
@@ -28,7 +27,6 @@
     overflow: hidden;
   }
 
-  /* Zones de texte : positions en % de la carte (d'après le gabarit) */
   .zone {
     position: absolute;
     left: 9.5%;
@@ -38,10 +36,8 @@
     padding: 0;
     outline: 1px dashed transparent;
   }
-  .zone:focus { outline: 1px dashed #2daa6a; }
   .zone.depasse { outline: 1px solid red; background: rgba(255,0,0,0.08); }
 
-  /* Titre : Lora 9/10 pt */
   .titre {
     top: 5%;
     height: 19%;
@@ -53,9 +49,8 @@
   .titre i { font-weight: 400; }
   .titre b { font-weight: 600; }
 
-  /* Points : police moderne 7 pt */
   .point {
-    font-family: "Helvetica Neue", Arial, sans-serif; /* à remplacer par votre police */
+    font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 7pt;
     line-height: 8pt;
     color: #111;
@@ -65,9 +60,6 @@
   .p3 { top: 54%;   height: 13%; }
   .p4 { top: 73%;   height: 10%; }
 
-  .source { color: #666; font-weight: normal; }
-
-  /* Thème en bas à droite */
   .theme {
     left: auto;
     right: 9%;
@@ -75,27 +67,36 @@
     top: 91%;
     height: 4%;
     text-align: right;
-    font-family: "Helvetica Neue", Arial, sans-serif; /* à remplacer par votre police */
+    font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 7pt;
     line-height: 8pt;
     color: #111;
+  }
+
+  #statut {
+    position: fixed;
+    top: 4px;
+    left: 8px;
+    font: 11px Arial, sans-serif;
+    color: #888;
   }
 </style>
 </head>
 <body>
 
+<div id="statut"></div>
+
 <div class="carte">
-  <div class="zone titre" id="titre" contenteditable="true">Chargement…</div>
-  <div class="zone point p1" id="p1" contenteditable="true"></div>
-  <div class="zone point p2" id="p2" contenteditable="true"></div>
-  <div class="zone point p3" id="p3" contenteditable="true"></div>
-  <div class="zone point p4" id="p4" contenteditable="true"></div>
-  <div class="zone theme" id="theme" contenteditable="true"></div>
+  <div class="zone titre" id="titre"></div>
+  <div class="zone point p1" id="p1"></div>
+  <div class="zone point p2" id="p2"></div>
+  <div class="zone point p3" id="p3"></div>
+  <div class="zone point p4" id="p4"></div>
+  <div class="zone theme" id="theme">Écologie & Environnement</div>
 </div>
 
 <script>
-  // Remplacez par l'adresse de VOTRE Worker (sans / à la fin)
-  const WORKER = "https://asymetrie-des-baratins.valentin-c-1501.workers.dev/";
+  var WORKER = "https://asymetrie-des-baratins.valentin-c-1501.workers.dev/";
 
   function verifier(el) {
     el.classList.toggle("depasse", el.scrollHeight > el.clientHeight + 1);
@@ -104,41 +105,39 @@
     document.querySelectorAll(".zone").forEach(verifier);
   }
 
-  // Convertit "<b>Titre.</b><br>suite <b>SOURCE</b>" : la dernière balise <b> devient la source grise
-  function avecSource(html) {
-    const i = html.lastIndexOf("<b>");
-    if (i > 0 && html.indexOf("</b>", i) === html.length - 4 && html.slice(i).length < 60) {
-      return html.slice(0, i) + '<span class="source">' + html.slice(i + 3, -4) + "</span>";
-    }
-    return html;
-  }
-
-  async function charger() {
-    const params = new URLSearchParams(location.search);
-    const num = params.get("page") || "01";
-    const theme = params.get("theme") || "";
-    try {
-      const r = await fetch(WORKER + "/?page=" + encodeURIComponent(num));
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-      document.getElementById("titre").innerHTML = d.titre;
-      for (let i = 0; i < 4; i++) {
-        document.getElementById("p" + (i + 1)).innerHTML = avecSource(d.points[i] || "");
-      }
-      document.getElementById("theme").textContent = theme;
-    } catch (e) {
-      document.getElementById("titre").textContent = "Erreur : " + e.message;
+  function remplir(data) {
+    document.getElementById("titre").innerHTML = data.titre || "";
+    var pts = data.points || [];
+    for (var i = 0; i < 4; i++) {
+      document.getElementById("p" + (i + 1)).innerHTML = pts[i] || "";
     }
     toutVerifier();
-    if (document.fonts) document.fonts.ready.then(toutVerifier);
   }
 
-  document.querySelectorAll(".zone").forEach(function (el) {
-    el.addEventListener("input", function () { verifier(el); });
-  });
+  function charger() {
+    var params = new URLSearchParams(location.search);
+    var page = params.get("page");
+    var statut = document.getElementById("statut");
+    if (!page) {
+      statut.textContent = "Aucun ?page= dans le lien";
+      return;
+    }
+    fetch(WORKER + "?page=" + encodeURIComponent(page))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.error) { statut.textContent = "Erreur : " + data.error; return; }
+        statut.textContent = "";
+        remplir(data);
+      })
+      .catch(function (e) { statut.textContent = "Erreur de chargement"; });
+  }
+
   charger();
-  // Rafraîchit toutes les 15 secondes pour suivre vos modifications Notion
-  setInterval(charger, 15000);
+  /* Rafraîchit toutes les 5 secondes pour suivre vos modifications dans Notion */
+  setInterval(charger, 5000);
+
+  window.addEventListener("load", toutVerifier);
+  if (document.fonts) document.fonts.ready.then(toutVerifier);
 </script>
 
 </body>
