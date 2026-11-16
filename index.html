@@ -27,20 +27,13 @@
     overflow: hidden;
   }
 
-  .zone {
+  /* BLOC 1 : idée reçue, hauteur selon le texte */
+  .titre {
     position: absolute;
     left: 9.5%;
     width: 82%;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    outline: 1px dashed transparent;
-  }
-  .zone.depasse { outline: 1px solid red; background: rgba(255,0,0,0.08); }
-
-  .titre {
     top: 5%;
-    height: 19%;
+    box-sizing: border-box;
     font-family: "Lora", serif;
     font-size: 9pt;
     line-height: 10pt;
@@ -49,23 +42,30 @@
   .titre i { font-weight: 400; }
   .titre b { font-weight: 600; }
 
-  .point {
-    font-family: "Helvetica Neue", Arial, sans-serif;
+  /* BLOC 2 : arguments (zone noire du gabarit) */
+  .corps {
+    position: absolute;
+    left: 9.5%;
+    width: 82%;
+    /* top est calculé par le script, juste sous le titre */
+    bottom: 12.5%;           /* limite basse du bloc noir */
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: "Helvetica Neue", Arial, sans-serif; /* à remplacer par votre police */
     font-size: 7pt;
     line-height: 8pt;
     color: #111;
   }
-  .p1 { top: 24.5%; height: 10.5%; }
-  .p2 { top: 38%;   height: 12%; }
-  .p3 { top: 54%;   height: 13%; }
-  .p4 { top: 73%;   height: 10%; }
+  .corps .pt { margin: 0 0 6pt 0; }   /* espace entre deux arguments */
+  .corps .pt:last-child { margin-bottom: 0; }
+
+  .depasse { outline: 1px solid red; background: rgba(255,0,0,0.08); }
 
   .theme {
-    left: auto;
+    position: absolute;
     right: 9%;
     width: 60%;
     top: 91%;
-    height: 4%;
     text-align: right;
     font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 7pt;
@@ -86,32 +86,56 @@
 
 <div id="statut"></div>
 
-<div class="carte">
-  <div class="zone titre" id="titre"></div>
-  <div class="zone point p1" id="p1"></div>
-  <div class="zone point p2" id="p2"></div>
-  <div class="zone point p3" id="p3"></div>
-  <div class="zone point p4" id="p4"></div>
-  <div class="zone theme" id="theme">Écologie & Environnement</div>
+<div class="carte" id="carte">
+  <div class="titre" id="titre"></div>
+  <div class="corps" id="corps"></div>
+  <div class="theme" id="theme">Écologie & Environnement</div>
 </div>
 
 <script>
   var WORKER = "https://asymetrie-des-baratins.valentin-c-1501.workers.dev/";
 
-  function verifier(el) {
-    el.classList.toggle("depasse", el.scrollHeight > el.clientHeight + 1);
-  }
-  function toutVerifier() {
-    document.querySelectorAll(".zone").forEach(verifier);
+  /* Mettre true pour réduire automatiquement la taille du texte si ça dépasse */
+  var reduireAuto = false;
+
+  /* Espace (en mm) entre le bas de l'idée reçue et le début des arguments */
+  var ESPACE_MM = 7;
+
+  function mmEnPx(mm) { return mm * 96 / 25.4; }
+
+  function mettreEnPage() {
+    var carte = document.getElementById("carte");
+    var titre = document.getElementById("titre");
+    var corps = document.getElementById("corps");
+
+    /* le bloc 2 démarre juste sous le bloc 1 */
+    var bas = titre.offsetTop + titre.offsetHeight + mmEnPx(ESPACE_MM);
+    corps.style.top = bas + "px";
+
+    /* réduction automatique optionnelle */
+    corps.style.fontSize = "";
+    corps.style.lineHeight = "";
+    if (reduireAuto) {
+      var taille = 7;
+      while (corps.scrollHeight > corps.clientHeight + 1 && taille > 5) {
+        taille -= 0.25;
+        corps.style.fontSize = taille + "pt";
+        corps.style.lineHeight = (taille + 1) + "pt";
+      }
+    }
+
+    corps.classList.toggle("depasse", corps.scrollHeight > corps.clientHeight + 1);
   }
 
   function remplir(data) {
     document.getElementById("titre").innerHTML = data.titre || "";
     var pts = data.points || [];
-    for (var i = 0; i < 4; i++) {
-      document.getElementById("p" + (i + 1)).innerHTML = pts[i] || "";
+    var html = "";
+    for (var i = 0; i < pts.length; i++) {
+      if (pts[i]) html += '<div class="pt">' + pts[i] + "</div>";
     }
-    toutVerifier();
+    document.getElementById("corps").innerHTML = html;
+    mettreEnPage();
   }
 
   function charger() {
@@ -129,15 +153,14 @@
         statut.textContent = "";
         remplir(data);
       })
-      .catch(function (e) { statut.textContent = "Erreur de chargement"; });
+      .catch(function () { statut.textContent = "Erreur de chargement"; });
   }
 
   charger();
-  /* Rafraîchit toutes les 5 secondes pour suivre vos modifications dans Notion */
   setInterval(charger, 5000);
 
-  window.addEventListener("load", toutVerifier);
-  if (document.fonts) document.fonts.ready.then(toutVerifier);
+  window.addEventListener("load", mettreEnPage);
+  if (document.fonts) document.fonts.ready.then(mettreEnPage);
 </script>
 
 </body>
