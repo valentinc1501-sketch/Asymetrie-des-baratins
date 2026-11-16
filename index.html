@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* La carte : 65 x 110 mm exactement, le fond remplit toute la carte */
+  .carte {
+    position: relative;
+    width: 65mm;
+    height: 110mm;
+    flex: none;
+    background-color: #fff;
+    background-image: url("fond.png");
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: 100% 100%;
+    overflow: hidden;
+  }
+
+  /* Zones de texte : positions en % de la carte (d'après le gabarit) */
+  .zone {
+    position: absolute;
+    left: 9.5%;
+    width: 82%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    outline: 1px dashed transparent;
+  }
+  .zone:focus { outline: 1px dashed #2daa6a; }
+  .zone.depasse { outline: 1px solid red; background: rgba(255,0,0,0.08); }
+
+  /* Titre : Lora 9/10 pt */
+  .titre {
+    top: 5%;
+    height: 19%;
+    font-family: "Lora", serif;
+    font-size: 9pt;
+    line-height: 10pt;
+    color: #333;
+  }
+  .titre i { font-weight: 400; }
+  .titre b { font-weight: 600; }
+
+  /* Points : police moderne 7 pt */
+  .point {
+    font-family: "Helvetica Neue", Arial, sans-serif; /* à remplacer par votre police */
+    font-size: 7pt;
+    line-height: 8pt;
+    color: #111;
+  }
+  .p1 { top: 24.5%; height: 10.5%; }
+  .p2 { top: 38%;   height: 12%; }
+  .p3 { top: 54%;   height: 13%; }
+  .p4 { top: 73%;   height: 10%; }
+
+  .source { color: #666; font-weight: normal; }
+
+  /* Thème en bas à droite */
+  .theme {
+    left: auto;
+    right: 9%;
+    width: 60%;
+    top: 91%;
+    height: 4%;
+    text-align: right;
+    font-family: "Helvetica Neue", Arial, sans-serif; /* à remplacer par votre police */
+    font-size: 7pt;
+    line-height: 8pt;
+    color: #111;
+  }
+</style>
+</head>
+<body>
+
+<div class="carte">
+
+  <div class="zone titre" contenteditable="true">
+    <i>Idée reçu n° 17 :</i><br>
+    <b>Je préfère faire attention à l'humain plutôt qu'aux plantes et aux animaux comme vous</b>
+  </div>
+
+  <div class="zone point p1" contenteditable="true">
+    75 % de l'alimentation mondiale repose sur seulement 17 espèces clés. Son effondrement menace directement notre survie. <span class="source">FAO</span>
+  </div>
+
+  <div class="zone point p2" contenteditable="true">
+    Le climat déplace les humains.<br>
+    <b>21,5 millions de déplacés</b> par an liés au climat, <b>216 millions d'ici 2050.</b> <span class="source">IDMC / Worldbank</span>
+  </div>
+
+  <div class="zone point p3" contenteditable="true">
+    Précarité et climat : la double peine.<br>
+    Le dérèglement climatique fait gonfler les prix énergétiques et alimentaires. En France, les plus précaires le subissent de plein fouet. <span class="source">France Stratégie</span>
+  </div>
+
+  <div class="zone point p4" contenteditable="true">
+    La pollution tue plus que les guerres.<br>
+    9 millions de morts par an. C'est la première menace pour la vie humaine. <span class="source">OMS</span>
+  </div>
+
+  <div class="zone theme" contenteditable="true">
+    Écologie & Environnement
+  </div>
+
+</div>
+
+<script>
+  function verifier(el) {
+    el.classList.toggle("depasse", el.scrollHeight > el.clientHeight + 1);
+  }
+  function toutVerifier() {
+    document.querySelectorAll(".zone").forEach(verifier);
+  }
+  document.querySelectorAll(".zone").forEach(function (el) {
+    el.addEventListener("input", function () { verifier(el); });
+  });
+  window.addEventListener("load", toutVerifier);
+  if (document.fonts) document.fonts.ready.then(toutVerifier);
+</script>
+
+</body>
+</html>
